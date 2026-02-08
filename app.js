@@ -190,6 +190,14 @@ function toggleSidebar() {
     setTimeout(() => lucide.createIcons(), 100);
 }
 
+function toggleMobileSearch() {
+    const searchBar = $('#mobile-search-bar');
+    searchBar.classList.toggle('hidden');
+    if (!searchBar.classList.contains('hidden')) {
+        $('#pos-mobile-search-header').focus();
+    }
+}
+
 function navigateTo(viewId) {
     // Hide all views
     $$('.view-section').forEach(el => el.classList.add('hidden'));
@@ -200,6 +208,17 @@ function navigateTo(viewId) {
 
     // Update Page Title
     $('#page-title').textContent = viewId.charAt(0).toUpperCase() + viewId.slice(1);
+
+    // Hide search bar if navigating away
+    $('#mobile-search-bar').classList.add('hidden');
+
+    // Show/Hide Mobile Search Toggle in Header
+    const searchToggle = $('#mobile-search-toggle');
+    if (viewId === 'pos') {
+        searchToggle.classList.remove('hidden');
+    } else {
+        searchToggle.classList.add('hidden');
+    }
 
     // Close mobile sidebar if open
     if (!$('#sidebar').classList.contains('-translate-x-full')) {
@@ -386,7 +405,7 @@ async function initPOS() {
 
     renderPOSGrid(items);
 
-    // Search function (shared between main and mobile search)
+    // Search function (shared between all search inputs)
     const performSearch = (query) => {
         const filtered = items.filter(item =>
             item.name.toLowerCase().includes(query) ||
@@ -395,23 +414,48 @@ async function initPOS() {
         renderPOSGrid(filtered);
     };
 
-    // Main Search (top of product grid)
-    $('#pos-search').addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        performSearch(query);
-        // Sync with mobile search
-        const mobileSearch = $('#pos-mobile-search');
-        if (mobileSearch) mobileSearch.value = e.target.value;
-    });
+    // Sync all search inputs
+    const syncSearchInputs = (value, skipElement) => {
+        const inputs = [
+            $('#pos-search'),
+            $('#pos-mobile-search-main'),
+            $('#pos-mobile-search'),
+            $('#pos-mobile-search-header')
+        ];
+        inputs.forEach(input => {
+            if (input && input !== skipElement) {
+                input.value = value;
+            }
+        });
+    };
 
-    // Mobile Quick Search (in cart section)
-    const mobileSearch = $('#pos-mobile-search');
-    if (mobileSearch) {
-        mobileSearch.addEventListener('input', (e) => {
+    // Desktop Search (top of product grid)
+    const desktopSearch = $('#pos-search');
+    if (desktopSearch) {
+        desktopSearch.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase();
             performSearch(query);
-            // Sync with main search
-            $('#pos-search').value = e.target.value;
+            syncSearchInputs(e.target.value, desktopSearch);
+        });
+    }
+
+    // Mobile Main Search Header (Sticky Bar)
+    const mobileHeaderSearch = $('#pos-mobile-search-header');
+    if (mobileHeaderSearch) {
+        mobileHeaderSearch.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            performSearch(query);
+            syncSearchInputs(e.target.value, mobileHeaderSearch);
+        });
+    }
+
+    // Mobile Quick Search (in cart section)
+    const mobileQuickSearch = $('#pos-mobile-search');
+    if (mobileQuickSearch) {
+        mobileQuickSearch.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            performSearch(query);
+            syncSearchInputs(e.target.value, mobileQuickSearch);
         });
     }
 }
@@ -450,15 +494,32 @@ function renderPOSGrid(items) {
 
 function setPriceMode(mode) {
     state.priceMode = mode;
-    $('#btn-retail').className = mode === 'retail'
-        ? 'px-3 py-1 text-sm font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white'
-        : 'px-3 py-1 text-sm font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors';
 
-    $('#btn-wholesale').className = mode === 'wholesale'
-        ? 'px-3 py-1 text-sm font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white'
-        : 'px-3 py-1 text-sm font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors';
+    // Desktop Buttons
+    const dRetail = $('#btn-retail');
+    const dWholesale = $('#btn-wholesale');
+    if (dRetail && dWholesale) {
+        dRetail.className = mode === 'retail'
+            ? 'px-3 py-1 text-sm font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white'
+            : 'px-3 py-1 text-sm font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors';
+        dWholesale.className = mode === 'wholesale'
+            ? 'px-3 py-1 text-sm font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white'
+            : 'px-3 py-1 text-sm font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors';
+    }
 
-    // Refresh Grid to show new prices
+    // Mobile Buttons
+    const mRetail = $('#btn-retail-mobile');
+    const mWholesale = $('#btn-wholesale-mobile');
+    if (mRetail && mWholesale) {
+        mRetail.className = mode === 'retail'
+            ? 'px-4 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white'
+            : 'px-4 py-1.5 text-xs font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors';
+        mWholesale.className = mode === 'wholesale'
+            ? 'px-4 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white'
+            : 'px-4 py-1.5 text-xs font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors';
+    }
+
+    // Refresh Grid
     initPOS();
     // Update Cart Prices NOT DONE - assuming cart prices lock on add. 
     // If requirement is dynamic updates, iterate cart.
@@ -519,6 +580,13 @@ function renderCart() {
 
     $('#cart-subtotal').textContent = `Rs. ${total.toFixed(2)}`;
     $('#cart-total').textContent = `Rs. ${total.toFixed(2)}`;
+
+    // Update mobile item count
+    const mobileCount = $('#mobile-item-count');
+    if (mobileCount) {
+        const count = state.cart.reduce((sum, item) => sum + item.qty, 0);
+        mobileCount.textContent = `${count} Items`;
+    }
 
     // Update balance if input exists
     calculateBalance();
