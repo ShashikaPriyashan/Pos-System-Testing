@@ -386,15 +386,34 @@ async function initPOS() {
 
     renderPOSGrid(items);
 
-    // Search
-    $('#pos-search').addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
+    // Search function (shared between main and mobile search)
+    const performSearch = (query) => {
         const filtered = items.filter(item =>
             item.name.toLowerCase().includes(query) ||
             item.sku.toLowerCase().includes(query)
         );
         renderPOSGrid(filtered);
+    };
+
+    // Main Search (top of product grid)
+    $('#pos-search').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        performSearch(query);
+        // Sync with mobile search
+        const mobileSearch = $('#pos-mobile-search');
+        if (mobileSearch) mobileSearch.value = e.target.value;
     });
+
+    // Mobile Quick Search (in cart section)
+    const mobileSearch = $('#pos-mobile-search');
+    if (mobileSearch) {
+        mobileSearch.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            performSearch(query);
+            // Sync with main search
+            $('#pos-search').value = e.target.value;
+        });
+    }
 }
 
 function renderPOSGrid(items) {
@@ -641,7 +660,7 @@ async function printReceipt(saleId, customer, total, items, cashGiven, balance) 
                 <span>Balance:</span>
                 <span>Rs. ${balance.toFixed(2)}</span>
             </div>
-            <p style="margin-top: 20px; font-size: 12px;">Thank you come again!</p>
+            <p style="margin-top: 20px; font-size: 12px;">Thank you, come again!</p>
         </div>
     `;
 
@@ -763,7 +782,7 @@ async function downloadPDF() {
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("Thank you come again!", centerX, y, { align: 'center' });
+    doc.text("Thank you, come again!", centerX, y, { align: 'center' });
 
     doc.save(`receipt-${Date.now()}.pdf`);
 }
