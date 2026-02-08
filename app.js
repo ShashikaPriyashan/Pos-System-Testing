@@ -22,6 +22,10 @@ const $$ = (selector) => document.querySelectorAll(selector);
 
 // --- 4. Initialization ---
 window.addEventListener('DOMContentLoaded', async () => {
+    // Check System Compatibility
+    const isCompatible = await checkSystemCompatibility();
+    if (!isCompatible) return;
+
     // Icons
     lucide.createIcons();
 
@@ -59,6 +63,43 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Setup Event Listeners
     setupEventListeners();
 });
+
+async function checkSystemCompatibility() {
+    const errors = [];
+
+    // Check Protocol (Frequent cause of failure in Brave/Chrome)
+    if (window.location.protocol === 'file:') {
+        errors.push("Offline storage and background services are blocked when running from a local file (file://). Please use a web server (like VS Code Live Server) or deploy to a hosting service.");
+    }
+
+    // Check CDNs
+    if (!window.Dexie) errors.push("Database engine (Dexie.js) failed to load.");
+    if (!window.lucide) errors.push("Icon library (Lucide) failed to load.");
+    if (typeof tailwind === 'undefined') errors.push("Styling engine (Tailwind CSS) failed to load.");
+
+    // Check Storage Access (Brave Shields)
+    try {
+        if (window.Dexie) {
+            const testDB = new Dexie('KadePOS_Probe');
+            await testDB.version(1).stores({ test: 'id' });
+            await testDB.open();
+            await testDB.delete();
+        }
+    } catch (e) {
+        errors.push("IndexedDB storage is blocked. This is often caused by Brave 'Shields' or strict privacy settings.");
+    }
+
+    if (errors.length > 0) {
+        const overlay = document.getElementById('compatibility-warning');
+        const text = document.getElementById('compatibility-error-text');
+        if (overlay && text) {
+            text.innerHTML = errors.map(err => `<div class='mb-2'>• ${err}</div>`).join('');
+            overlay.classList.remove('hidden');
+            return false;
+        }
+    }
+    return true;
+}
 
 function showInstallPrompt(prompt) {
     const banner = document.createElement('div');

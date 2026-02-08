@@ -44,7 +44,56 @@
 
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200">
 
-    <!-- Login Screen -->
+    <!-- Compatibility Warning Overlay (Hidden by default) -->
+    <div id="compatibility-warning"
+        class="fixed inset-0 z-[100] bg-white dark:bg-gray-900 flex items-center justify-center p-4 text-center hidden">
+        <div
+            class="max-w-md p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-red-100 dark:border-red-900/30">
+            <div
+                class="w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-red-600" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">System Error</h2>
+            <p id="compatibility-error-text"
+                class="text-gray-600 dark:text-gray-400 mb-6 text-sm lg:text-base leading-relaxed">
+                Essential components failed to load. This usually happens in Brave browser or when running without a web
+                server.
+            </p>
+            <div class="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl text-left text-sm mb-8 space-y-3">
+                <p class="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    Recommended Fixes:
+                </p>
+                <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+                    <li class="flex gap-2"><span>1.</span> <b>Brave Users:</b> Disable "Shields" for this application.
+                    </li>
+                    <li class="flex gap-2"><span>2.</span> Ensure you are opening this via <b>http://</b> or
+                        <b>https://</b> (not file://).
+                    </li>
+                    <li class="flex gap-2"><span>3.</span> <b>Allow Popups:</b> Needed for WhatsApp sharing and PDF
+                        downloads.</li>
+                </ul>
+            </div>
+            <div class="flex flex-col gap-3">
+                <button onclick="window.location.reload()"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/30">
+                    Attempt Repair & Reload
+                </button>
+                <button onclick="document.getElementById('compatibility-warning').classList.add('hidden')"
+                    class="text-gray-500 text-xs hover:underline mt-2">
+                    Dismiss (Not recommended)
+                </button>
+            </div>
+        </div>
+    </div>
     <div id="login-screen" class="fixed inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-900 z-50">
         <div
             class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg w-96 border border-gray-200 dark:border-gray-700">
