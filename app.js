@@ -405,7 +405,7 @@ function renderPOSGrid(items) {
         const price = state.priceMode === 'retail' ? item.retailPrice : item.wholesalePrice;
 
         const card = document.createElement('button');
-        card.className = 'flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow text-left';
+        card.className = 'flex flex-col p-3 md:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all text-left min-h-[120px] active:scale-95';
         card.disabled = item.quantity <= 0;
         card.onclick = () => addToCart(item);
 
