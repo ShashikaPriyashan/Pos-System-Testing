@@ -1,0 +1,141 @@
+/* Custom Scrollbar for Webkit */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 768px) {
+
+    button,
+    a,
+    input[type="button"],
+    input[type="submit"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Better table scrolling on mobile */
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    /* Make modals full-screen on very small devices */
+    @media (max-width: 500px) {
+        .modal>div {
+            min-height: 100vh;
+            border-radius: 0;
+        }
+    }
+}
+
+/* Smooth scrolling */
+* {
+    scroll-behavior: smooth;
+}
+
+/* Print Styles */
+@media print {
+    @page {
+        size: 80mm auto;
+        margin: 0;
+    }
+
+    body {
+        width: 80mm;
+        margin: 0;
+        padding: 0;
+        background-color: white;
+    }
+
+    /* Hide everything by default using display:none to remove layout space */
+    body>* {
+        display: none !important;
+    }
+
+    /* Only show the print area */
+    #receipt-print-area {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 5px;
+        margin: 0;
+        font-size: 12px;
+        color: black;
+        background-color: white;
+    }
+
+    /* Ensure content stays within paper */
+    #receipt-print-area * {
+        visibility: visible !important;
+        overflow-wrap: break-word;
+    }
+}
+
+/* Utility to hide elements */
+.hidden {
+    display: none !important;
+}
+
+/* Toast Animations */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast {
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+/* PWA Install Banner */
+.install-prompt {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translate(-50%, 100px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
