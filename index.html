@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KadePOS - Offline First System</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Offline-first POS system for retail and wholesale">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KadePOS">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%233b82f6'/><text x='50' y='50' font-size='48' fill='white' text-anchor='middle' dominant-baseline='central'>K</text></svg>">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Dexie.js -->
+    <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200">
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="fixed inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-900 z-50">
+        <div
+            class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg w-96 border border-gray-200 dark:border-gray-700">
+            <div class="flex justify-center mb-6">
+                <i data-lucide="shopping-bag" class="w-12 h-12 text-blue-500"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-center mb-6 dark:text-white">KadePOS Login</h2>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-gray-300">Username</label>
+                    <input type="text" id="username"
+                        class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-gray-300">Password</label>
+                    <input type="password" id="password"
+                        class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required>
+                </div>
+                <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors">
+                    Login
+                </button>
+            </form>
+            <p id="login-error" class="text-red-500 text-sm mt-4 text-center hidden"></p>
+            <p class="text-xs text-gray-500 mt-4 text-center">Default: admin / admin123</p>
+        </div>
+    </div>
+
+    <!-- Main App Layout (Hidden by default) -->
+    <div id="app-layout" class="flex h-screen overflow-hidden hidden">
+
+        <!-- Mobile Menu Overlay -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"
+            onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 -translate-x-full lg:translate-x-0">
+            <div class="p-4 lg:p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div class="flex items-center">
+                    <i data-lucide="shopping-bag" class="w-6 lg:w-8 h-6 lg:h-8 text-blue-500 mr-2"></i>
+                    <h1 class="text-lg lg:text-xl font-bold dark:text-white">KadePOS</h1>
+                </div>
+                <button onclick="toggleSidebar()"
+                    class="lg:hidden p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i data-lucide="x" class="w-5 h-5 dark:text-white"></i>
+                </button>
+            </div>
+
+            <nav class="flex-1 p-2 lg:p-4 space-y-1 lg:space-y-2 overflow-y-auto">
+                <button onclick="navigateTo('dashboard')"
+                    class="nav-item w-full flex items-center p-2 lg:p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    data-target="dashboard">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-2 lg:mr-3"></i>
+                    <span class="text-sm lg:text-base">Dashboard</span>
+                </button>
+                <button onclick="navigateTo('pos')"
+                    class="nav-item w-full flex items-center p-2 lg:p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    data-target="pos">
+                    <i data-lucide="shopping-cart" class="w-5 h-5 mr-2 lg:mr-3"></i>
+                    <span class="text-sm lg:text-base">POS Terminal</span>
+                </button>
+                <button onclick="navigateTo('inventory')"
+                    class="nav-item w-full flex items-center p-2 lg:p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    data-target="inventory">
+                    <i data-lucide="package" class="w-5 h-5 mr-2 lg:mr-3"></i>
+                    <span class="text-sm lg:text-base">Inventory</span>
+                </button>
+                <button onclick="navigateTo('users')"
+                    class="nav-item w-full flex items-center p-2 lg:p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    data-target="users">
+                    <i data-lucide="users" class="w-5 h-5 mr-2 lg:mr-3"></i>
+                    <span class="text-sm lg:text-base">Users</span>
+                </button>
+                <button onclick="navigateTo('reports')"
+                    class="nav-item w-full flex items-center p-2 lg:p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    data-target="reports">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 mr-2 lg:mr-3"></i>
+                    <span class="text-sm lg:text-base">Reports</span>
+                </button>
+                <button onclick="navigateTo('settings')"
+                    class="nav-item w-full flex items-center p-2 lg:p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    data-target="settings">
+                    <i data-lucide="settings" class="w-5 h-5 mr-2 lg:mr-3"></i>
+                    <span class="text-sm lg:text-base">Settings</span>
+                </button>
+            </nav>
+
+            <div class="p-3 lg:p-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between mb-3 lg:mb-4">
+                    <div class="flex items-center">
+                        <div class="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold mr-2 text-sm"
+                            id="user-avatar">
+                            A
+                        </div>
+                        <div>
+                            <p class="text-xs lg:text-sm font-medium dark:text-white" id="current-user-name">Admin User
+                            </p>
+                            <p class="text-[10px] lg:text-xs text-gray-500 dark:text-gray-400" id="current-user-role">
+                                Administrator</p>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="logout()"
+                    class="w-full flex items-center justify-center p-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
+                    <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200 overflow-hidden">
+
+            <!-- Top Bar -->
+            <header
+                class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-14 lg:h-16 flex items-center justify-between px-3 lg:px-6 shadow-sm">
+                <div class="flex items-center space-x-2 lg:space-x-0">
+                    <button onclick="toggleSidebar()"
+                        class="lg:hidden p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i data-lucide="menu" class="w-5 h-5 dark:text-white"></i>
+                    </button>
+                    <h2 id="page-title" class="text-base lg:text-xl font-bold dark:text-white">Dashboard</h2>
+                </div>
+
+                <div class="flex items-center space-x-2 lg:space-x-4">
+                    <button onclick="dailyClose()"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 lg:px-3 py-1 text-xs lg:text-sm rounded transition-colors hidden sm:block">
+                        Daily Close
+                    </button>
+                    <button id="theme-toggle"
+                        class="p-1.5 lg:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <i data-lucide="moon" class="w-4 lg:w-5 h-4 lg:h-5 text-gray-600 dark:text-yellow-400"></i>
+                    </button>
+                    <div class="h-6 w-px bg-gray-300 dark:bg-gray-600 hidden sm:block"></div>
+                    <button onclick="window.location.reload()"
+                        class="p-1.5 lg:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        title="Full App Reload">
+                        <i data-lucide="refresh-cw" class="w-4 lg:w-5 h-4 lg:h-5 text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Container -->
+            <div id="content-area" class="flex-1 overflow-auto p-3 lg:p-6 relative">
+
+                <!-- Dashboard View -->
+                <div id="view-dashboard" class="view-section space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div
+                            class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total Sales (Today)
+                                </h3>
+                                <i data-lucide="dollar-sign" class="w-5 h-5 text-green-500"></i>
+                            </div>
+                            <p class="text-2xl font-bold dark:text-white" id="dash-total-sales">Rs. 0.00</p>
+                        </div>
+                        <div
+                            class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Orders (Today)</h3>
+                                <i data-lucide="shopping-bag" class="w-5 h-5 text-blue-500"></i>
+                            </div>
+                            <p class="text-2xl font-bold dark:text-white" id="dash-order-count">0</p>
+                        </div>
+                        <div
+                            class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Low Stock Items</h3>
+                                <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-500"></i>
+                            </div>
+                            <p class="text-2xl font-bold dark:text-white" id="dash-low-stock">0</p>
+                        </div>
+                        <div
+                            class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total Products</h3>
+                                <i data-lucide="package" class="w-5 h-5 text-purple-500"></i>
+                            </div>
+                            <p class="text-2xl font-bold dark:text-white" id="dash-total-products">0</p>
+                        </div>
+                    </div>
+
+                    <!-- Recent Sales Table -->
+                    <div
+                        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="font-bold dark:text-white">Recent Transactions</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead
+                                    class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Order ID</th>
+                                        <th scope="col" class="px-6 py-3">Date</th>
+                                        <th scope="col" class="px-6 py-3">Customer</th>
+                                        <th scope="col" class="px-6 py-3">Amount</th>
+                                        <th scope="col" class="px-6 py-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-sales-table-body">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- POS View -->
+                <div id="view-pos" class="view-section hidden h-full flex flex-col md:flex-row gap-6">
+                    <!-- Left: Product Selection -->
+                    <div
+                        class="flex-1 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex gap-4">
+                            <div class="relative flex-1">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                                </span>
+                                <input type="text" id="pos-search"
+                                    class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    placeholder="Search products (Name, SKU)...">
+                            </div>
+                            <div class="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                                <button onclick="setPriceMode('retail')" id="btn-retail"
+                                    class="px-3 py-1 text-sm font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white">Retail</button>
+                                <button onclick="setPriceMode('wholesale')" id="btn-wholesale"
+                                    class="px-3 py-1 text-sm font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors">Wholesale</button>
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                            id="pos-product-grid">
+                            <!-- Products populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Cart & Checkout -->
+                    <div
+                        class="w-full md:w-96 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col h-full">
+                        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="font-bold dark:text-white mb-2">Current Order</h3>
+                            <div class="flex gap-2">
+                                <input type="text" id="pos-customer-name"
+                                    class="flex-1 p-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    placeholder="Customer Name (Default: Cash)">
+                            </div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-4 space-y-2" id="pos-cart-items">
+                            <!-- Cart Items -->
+                        </div>
+
+                        <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                            <div class="flex justify-between mb-2 text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
+                                <span class="dark:text-white font-medium" id="cart-subtotal">Rs. 0.00</span>
+                            </div>
+
+                            <!-- Cash & Balance Inputs -->
+                            <div class="mb-4 space-y-2 border-t border-b border-gray-200 dark:border-gray-700 py-2">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-sm font-medium dark:text-gray-300">Cash Given:</label>
+                                    <input type="number" id="pos-cash-given"
+                                        class="w-24 p-1 text-right text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        placeholder="0.00" oninput="calculateBalance()">
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <label class="text-sm font-medium dark:text-gray-300">Balance:</label>
+                                    <span id="pos-balance" class="text-sm font-bold text-gray-800 dark:text-white">Rs.
+                                        0.00</span>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between mb-4 text-xl font-bold">
+                                <span class="dark:text-white">Total</span>
+                                <span class="text-blue-600 dark:text-blue-400" id="cart-total">Rs. 0.00</span>
+                            </div>
+                            <button onclick="processCheckout()"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-colors">
+                                <i data-lucide="printer" class="w-5 h-5"></i>
+                                Checkout & Print
+                            </button>
+                            <div class="grid grid-cols-2 gap-2 mt-2">
+                                <button onclick="shareViaWhatsApp()"
+                                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
+                                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                    WhatsApp
+                                </button>
+                                <button onclick="downloadPDF()"
+                                    class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                    PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory View -->
+                <div id="view-inventory" class="view-section hidden space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div class="relative flex-1 max-w-md">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                            </span>
+                            <input type="text" id="inventory-search"
+                                class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                                placeholder="Search inventory...">
+                        </div>
+                        <button onclick="openProductModal()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                            Add Product
+                        </button>
+                    </div>
+
+                    <div
+                        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead
+                                    class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                    <tr>
+                                        <th class="px-6 py-3">Product Name</th>
+                                        <th class="px-6 py-3">Category</th>
+                                        <th class="px-6 py-3">SKU</th>
+                                        <th class="px-6 py-3">Variant</th>
+                                        <th class="px-6 py-3 text-right">Stock</th>
+                                        <th class="px-6 py-3 text-right">Retail Price</th>
+                                        <th class="px-6 py-3 text-right">Wholesale</th>
+                                        <th class="px-6 py-3 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-table-body">
+                                    <!-- Inventory Items -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users View -->
+                <div id="view-users" class="view-section hidden space-y-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold dark:text-white">User Management</h3>
+                        <button onclick="openModal('add-user-modal')"
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                            <i data-lucide="user-plus" class="w-5 h-5"></i>
+                            Add User
+                        </button>
+                    </div>
+                    <div
+                        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead
+                                class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                <tr>
+                                    <th class="px-6 py-3">Username</th>
+                                    <th class="px-6 py-3">Role</th>
+                                    <th class="px-6 py-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Users List -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Reports View -->
+                <div id="view-reports" class="view-section hidden space-y-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold dark:text-white">Sales Reports</h3>
+                    </div>
+
+                    <div
+                        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden p-6">
+                        <p class="text-gray-500 text-center py-8">Detailed reporting functionality to be implemented
+                            based on specific requirements. Currently, dashboard provides daily summaries.</p>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div id="view-settings" class="view-section hidden space-y-6">
+                    <div
+                        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 class="text-lg font-bold mb-4 dark:text-white">Shop Configuration</h3>
+                        <form id="shop-settings-form" class="space-y-4 max-w-lg">
+                            <div>
+                                <label class="block text-sm font-medium mb-1 dark:text-gray-300">Shop Name</label>
+                                <input type="text" id="set-shop-name"
+                                    class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1 dark:text-gray-300">Address</label>
+                                <input type="text" id="set-shop-address"
+                                    class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1 dark:text-gray-300">Phone</label>
+                                <input type="text" id="set-shop-phone"
+                                    class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            </div>
+                            <button type="submit"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors">Save
+                                Settings</button>
+                        </form>
+                    </div>
+
+                    <div
+                        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 class="text-lg font-bold mb-4 dark:text-white">Data Management</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Manage your database and backups. Daily
+                            backups are recommended.</p>
+                        <div class="flex gap-4">
+                            <button onclick="exportData()"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                Export Backup (JSON)
+                            </button>
+                            <label
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded flex items-center gap-2 cursor-pointer transition-colors">
+                                <i data-lucide="upload" class="w-4 h-4"></i>
+                                Import Backup
+                                <input type="file" id="import-file" class="hidden" accept=".json"
+                                    onchange="importData(this)">
+                            </label>
+                            <button onclick="resetDatabase()"
+                                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors ml-auto">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                Reset Database
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add Product Modal -->
+    <div id="add-product-modal"
+        class="modal fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-bold dark:text-white">Add New Product</h3>
+                <button onclick="closeModal('add-product-modal')"
+                    class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="add-product-form" class="space-y-4">
+                    <input type="hidden" name="inventoryId" id="edit-inventory-id">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">Product Name</label>
+                            <input type="text" name="name"
+                                class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">Category</label>
+                            <input type="text" name="category"
+                                class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">SKU / Barcode</label>
+                            <input type="text" name="sku"
+                                class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">Color/Variant</label>
+                            <input type="text" name="color"
+                                class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                placeholder="e.g. Red, XL, Combo">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">Size</label>
+                            <input type="text" name="size"
+                                class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                placeholder="e.g. S, M, L">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">Initial Quantity</label>
+                            <input type="number" name="quantity"
+                                class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                required value="0">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">Buying Price</label>
+                            <input type="number" step="0.01" name="buyingPrice"
+                                class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">Retail Price</label>
+                            <input type="number" step="0.01" name="retailPrice"
+                                class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">Wholesale Price</label>
+                            <input type="number" step="0.01" name="wholesalePrice"
+                                class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                required>
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button type="button" onclick="closeModal('add-product-modal')"
+                            class="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-2">Cancel</button>
+                        <button type="submit"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition-colors">Save
+                            Product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="add-user-modal"
+        class="modal fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md m-4">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-bold dark:text-white">Add New User</h3>
+                <button onclick="closeModal('add-user-modal')"
+                    class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="add-user-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1 dark:text-gray-300">Username</label>
+                        <input type="text" id="new-username"
+                            class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 dark:text-gray-300">Password</label>
+                        <input type="password" id="new-password"
+                            class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 dark:text-gray-300">Role</label>
+                        <select id="new-role"
+                            class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="staff">Staff</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button type="button" onclick="closeModal('add-user-modal')"
+                            class="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-2">Cancel</button>
+                        <button type="submit"
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow transition-colors">Create
+                            User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Receipt Template for Printing -->
+    <div id="receipt-print-area" class="hidden print:block">
+        <!-- Content injected by JS -->
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <script src="./app.js"></script>
+</body>
+
+</html>
