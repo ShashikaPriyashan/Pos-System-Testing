@@ -494,36 +494,8 @@ function renderPOSGrid(items) {
 
 function setPriceMode(mode) {
     state.priceMode = mode;
-
-    // Desktop Buttons
-    const dRetail = $('#btn-retail');
-    const dWholesale = $('#btn-wholesale');
-    if (dRetail && dWholesale) {
-        dRetail.className = mode === 'retail'
-            ? 'px-3 py-1 text-sm font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white'
-            : 'px-3 py-1 text-sm font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors';
-        dWholesale.className = mode === 'wholesale'
-            ? 'px-3 py-1 text-sm font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white'
-            : 'px-3 py-1 text-sm font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors';
-    }
-
-    // Mobile Buttons
-    const mRetail = $('#btn-retail-mobile');
-    const mWholesale = $('#btn-wholesale-mobile');
-    if (mRetail && mWholesale) {
-        mRetail.className = mode === 'retail'
-            ? 'px-4 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white'
-            : 'px-4 py-1.5 text-xs font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors';
-        mWholesale.className = mode === 'wholesale'
-            ? 'px-4 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-colors text-gray-800 dark:text-white'
-            : 'px-4 py-1.5 text-xs font-medium rounded-md hover:bg-white dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 transition-colors';
-    }
-
     // Refresh Grid
     initPOS();
-    // Update Cart Prices NOT DONE - assuming cart prices lock on add. 
-    // If requirement is dynamic updates, iterate cart.
-    // For now, let's keep added items as they were added.
 }
 
 function addToCart(item) {
